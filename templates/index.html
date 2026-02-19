@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>Parts Power Up</title>
 <style>
-/* Tesla-style UI & glow animations */
+/* Styles are unchanged */
 @font-face {
     font-family: 'Universal Sans';
     src: local('Universal Sans'), sans-serif;
@@ -30,9 +30,9 @@ button:hover{transform:scale(1.05);}
 .unlocked{background:#22c55e;box-shadow:0 0 10px #22c55e;color:#000; animation:pulseGlow 1s ease;}
 @keyframes pulseGlow{0%{box-shadow:0 0 5px #22c55e; transform:scale(1);}50%{box-shadow:0 0 20px #22c55e;transform:scale(1.05);}100%{box-shadow:0 0 5px #22c55e;transform:scale(1);}}
 .log{margin-top:20px;background:#020617;padding:10px;border-radius:8px;max-height:200px;overflow-y:auto;font-family:'Universal Sans', sans-serif;}
-.manager-panel{margin-top:15px;text-align:center;background:#1e293b;padding:10px;border-radius:10px;display:none;}
+.manager-panel{margin-top:15px;text-align:center;background:#1e293b;padding:10px;border-radius:10px;}
 .manager-panel span{margin-right:15px;font-weight:bold;}
-.manager-panel button{background:linear-gradient(135deg,#facc15,#b45309);}
+.manager-panel a{background:linear-gradient(135deg,#facc15,#b45309); color: white; text-decoration: none; padding: 10px 15px; border-radius: 8px; font-family:'Universal Sans', sans-serif; cursor:pointer;}
 #confirmPopup{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;z-index:1000;}
 #confirmPopup div{background:#1e293b;padding:30px;border-radius:15px;text-align:center;color:white;font-family:'Universal Sans', sans-serif;}
 #confirmPopup button{margin:5px;padding:8px 15px;border-radius:8px;background:linear-gradient(135deg,#ef4444,#b91c1c);border:none;color:white;cursor:pointer;}
@@ -46,26 +46,24 @@ button:hover{transform:scale(1.05);}
 
 <div class="controls">
 <select id="employee"></select>
-<input id="amount" type="number" placeholder="Points" disabled>
-<input id="reason" type="text" placeholder="Reason for change" disabled>
-<button id="addBtn" onclick="add()" disabled>Add</button>
-<button id="removeBtn" onclick="remove()" disabled>Remove</button>
+<input id="amount" type="number" placeholder="Points">
+<input id="reason" type="text" placeholder="Reason for change">
+<button id="addBtn" onclick="add()">Add</button>
+<button id="removeBtn" onclick="remove()">Remove</button>
 </div>
 
 <div class="manager-panel" id="managerPanel">
-<span id="managerName"></span>
-<button onclick="logoutManager()">Logout</button>
+    <span>Manager: {{ current_user.name }}</span>
+    <a href="/logout">Logout</a>
 </div>
 
 <div class="progress"><div id="progressFill" class="progress-fill"></div></div>
-
 <div class="badges">
 <span id="b25" class="badge">🔥 Chill Tier (25)</span>
 <span id="b50" class="badge">⚡ Standard Tier (50)</span>
 <span id="b75" class="badge">🚀 Ludicrous Tier (75)</span>
 <span id="b100" class="badge">🏁 Plaid Tier (100)</span>
 </div>
-
 <div id="grid" class="grid"></div>
 <div id="log" class="log"></div>
 </div>
@@ -80,119 +78,100 @@ button:hover{transform:scale(1.05);}
 </div>
 
 <script>
-let employees=[],currentEmployee=null,managerUser=null,managerName=null,inactivityTimer;
-const addBtn=document.getElementById("addBtn");
-const removeBtn=document.getElementById("removeBtn");
-const pointsInput=document.getElementById("amount");
-const reasonInput=document.getElementById("reason");
-const managerPanel=document.getElementById("managerPanel");
-const managerNameSpan=document.getElementById("managerName");
+let employees=[], currentEmployee=null;
 let pendingAction=null;
 
-function enableManagerControls(){
-    addBtn.disabled=false; removeBtn.disabled=false; pointsInput.disabled=false; reasonInput.disabled=false;
-    managerPanel.style.display="block"; resetInactivityTimer();
-}
-function disableManagerControls(){
-    addBtn.disabled=true; removeBtn.disabled=true; pointsInput.disabled=true; reasonInput.disabled=true;
-    managerPanel.style.display="none"; managerUser=null; managerName=null; alert("Manager session expired");
-}
-function logoutManager(){ disableManagerControls(); clearTimeout(inactivityTimer); alert("Manager logged out"); }
-function resetInactivityTimer(){ clearTimeout(inactivityTimer); inactivityTimer=setTimeout(()=>disableManagerControls(),120000); }
-
-document.addEventListener("mousemove",resetInactivityTimer);
-document.addEventListener("keydown",resetInactivityTimer);
-
 async function loadEmployees(){
-    const res=await fetch("/api/employees"); employees=await res.json(); employees.sort();
-    const select=document.getElementById("employee"); select.innerHTML="";
-    employees.forEach(emp=>{ const o=document.createElement("option"); o.value=emp; o.textContent=emp; select.appendChild(o); });
-    currentEmployee=employees[0]; loadData();
+    const res = await fetch("/api/employees");
+    employees = await res.json();
+    const select = document.getElementById("employee");
+    select.innerHTML = "";
+    employees.forEach(emp => {
+        const o = document.createElement("option");
+        o.value = emp; o.textContent = emp;
+        select.appendChild(o);
+    });
+    currentEmployee = employees[0];
+    loadData();
 }
-document.getElementById("employee").addEventListener("change",e=>{ currentEmployee=e.target.value; loadData(); });
+document.getElementById("employee").addEventListener("change", e => {
+    currentEmployee = e.target.value;
+    loadData();
+});
 
 function getTier(i){ if(i<25) return "tier1"; if(i<50) return "tier2"; if(i<75) return "tier3"; return "tier4"; }
 
 function buildGrid(points){
-    const grid=document.getElementById("grid"); grid.innerHTML="";
-    for(let i=0;i<100;i++){
-        const cell=document.createElement("div"); cell.className="cell";
-        const row=Math.floor(i/10), col=i%10;
-        const index=(9-row)*10+col; // bottom-left to top-right
-        if(index<points){ cell.classList.add(getTier(index)); }
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+    for(let i=0; i<100; i++){
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        const row = Math.floor(i/10), col = i%10;
+        const index = (9-row)*10 + col;
+        if(index < points){ cell.classList.add(getTier(index)); }
         grid.appendChild(cell);
     }
-    document.getElementById("progressFill").style.width = points+"%";
-
-    ["25","50","75","100"].forEach(v=>{
-        const badge=document.getElementById("b"+v);
-        badge.classList.toggle("unlocked", points>=v);
+    document.getElementById("progressFill").style.width = points + "%";
+    ["25","50","75","100"].forEach(v => {
+        document.getElementById("b"+v).classList.toggle("unlocked", points >= v);
     });
 }
 
 async function loadData(){
-    const res=await fetch(`/api/data/${currentEmployee}`); const data=await res.json();
+    const res = await fetch(`/api/data/${currentEmployee}`);
+    const data = await res.json();
     buildGrid(data.points);
-    const log=document.getElementById("log"); log.innerHTML="";
-    data.logs.slice().reverse().forEach(l=>{
-        const div=document.createElement("div");
-        div.textContent = `${l.time} | ${l.manager} | ${l.action} | Reason: ${l.reason}`;
+    const log = document.getElementById("log");
+    log.innerHTML = "";
+    data.logs.forEach(l => {
+        const div = document.createElement("div");
+        div.textContent = `$${l.timestamp} | $${l.manager} | $${l.action} | Reason: $${l.reason}`;
         log.appendChild(div);
     });
 }
 
 function showConfirmation(actionType){
-    if(!managerUser){ alert("Only managers can modify points"); return; }
-
-    const amount = pointsInput.value;
-    const reason = reasonInput.value.trim();
-    if(!amount || amount<=0){ alert("Enter a valid points number"); return; }
+    const amount = document.getElementById("amount").value;
+    const reason = document.getElementById("reason").value.trim();
+    if(!amount || amount <= 0){ alert("Enter a valid points number"); return; }
     if(!reason){ alert("Please enter a reason"); return; }
 
     pendingAction = { type: actionType, amount, reason };
-
-    const text = `${actionType==="add"?"Add":"Remove"} ${amount} points for ${currentEmployee}?\nReason: ${reason}`;
+    const text = `$${actionType === "add" ? "Add" : "Remove"} $${amount} points for $${currentEmployee}?\nReason: $${reason}`;
     document.getElementById("confirmText").textContent = text;
     document.getElementById("confirmPopup").style.display = "flex";
 }
 
 function confirmAction(confirm){
-    const popup=document.getElementById("confirmPopup"); popup.style.display="none";
+    document.getElementById("confirmPopup").style.display = "none";
     if(confirm && pendingAction){
-        if(pendingAction.type==="add") executeAdd(pendingAction.amount, pendingAction.reason);
+        if(pendingAction.type === "add") executeAdd(pendingAction.amount, pendingAction.reason);
         else executeRemove(pendingAction.amount, pendingAction.reason);
     }
-    pendingAction=null;
-    reasonInput.value="";
-    pointsInput.value="";
+    pendingAction = null;
+    document.getElementById("reason").value = "";
+    document.getElementById("amount").value = "";
 }
 
 async function executeAdd(amount, reason){
-    await fetch("/api/add",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({employee:currentEmployee,amount,manager:managerName,reason})});
+    await fetch("/api/add", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({employee: currentEmployee, amount, reason})
+    });
     loadData();
 }
 
 async function executeRemove(amount, reason){
-    await fetch("/api/remove",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({employee:currentEmployee,amount,manager:managerName,reason})});
+    await fetch("/api/remove", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({employee: currentEmployee, amount, reason})
+    });
     loadData();
 }
 
 function add(){ showConfirmation("add"); }
 function remove(){ showConfirmation("remove"); }
-
-// Manager login Ctrl+Shift+M
-document.addEventListener("keydown",async e=>{
-    if(e.ctrlKey && e.shiftKey && e.key.toLowerCase()==="m"){
-        const username=prompt("Enter manager username:");
-        const password=prompt("Enter password:");
-        const res=await fetch("/api/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username,password})});
-        if(res.ok){ const data=await res.json(); managerUser=data.username; managerName=data.name;
-            managerNameSpan.textContent=`Manager: ${managerName}`; enableManagerControls();
-        } else alert("Invalid login");
-    }
-});
 
 loadEmployees();
 </script>
