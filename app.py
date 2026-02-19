@@ -12,17 +12,18 @@ EMPLOYEES_LIST = sorted([
     "Aaron O'Sullivan","Adam Mcguigan","Adrian Vladau","Amaan Satti","Anna Shaw", "Blake Erridge","Carl Atkins","Charlie Sneath","Claudiu Axinte","Cristina Constantinescu", "Dan Hitchcock","Daniel Waller","David Allcock","Dom Sparkes","Ed Simonaitis", "Emma Charles","Gaz Smith","Gavin Warrington","George Dooler","Graham Ross", "Glenn Walters","Ian Macpherson","Ioan Scurtu","Jake Mitchell","Jake Turner", "Jamie Chilcott","James Szerencses","Jarek Powaga","JERRY ATTIANAH","Jon Foggo", "Jon Mcfadyen","Jordan Bullen","Josh Prance","Justin Parsons","Kieran Carr", "Liam Murphy","Mari Belboda","Mark Mcdonald","Martin Wherrett","Matt Hollamby", "Matt Nolan","Matt Pike","Michael Quinn","Mike Watts","Nada Musa", "Neil Baker","Neil Ellis","Nicola Stennett-Bale","Phil Buckland","Rob Flinn", "Ryan Birkett","Sean Phipps","Shaun Kane","Shoeb Ahmed","Stephen Hopkins", "Umar Pervez","William Rutherford"
 ])
 
+# Passwords are now read from environment variables for security.
+# The second argument to os.environ.get() is a default for local testing.
 MANAGERS_LIST = {
-    # In a real app, passwords should come from secure environment variables.
-    "jkent": {"name":"James Kent","hash": generate_password_hash("TeslaManage1")},
-    "aise": {"name":"Andrei Isepciuc","hash": generate_password_hash("TeslaManage2")},
-    "wwit": {"name":"Wayne Withers","hash": generate_password_hash("TeslaManage3")},
-    "spol": {"name":"Steve Pollock","hash": generate_password_hash("TeslaManage4")},
-    "jpow": {"name":"Jarek Powaga","hash": generate_password_hash("TeslaManage5")},
-    "pdool": {"name":"Paul Doolan","hash": generate_password_hash("TeslaManage6")},
-    "cbird": {"name":"Craig Bird","hash": generate_password_hash("TeslaManage7")},
-    "nmcc": {"name":"Neil McCay","hash": generate_password_hash("TeslaManage8")}
-}
+    "jkent": {"name":"James Kent",      "hash": generate_password_hash(os.environ.get("PASS_JKENT", "localpass1"))},
+    "aise":  {"name":"Andrei Isepciuc", "hash": generate_password_hash(os.environ.get("PASS_AISE",  "localpass2"))},
+    "wwit":  {"name":"Wayne Withers",   "hash": generate_password_hash(os.environ.get("PASS_WWIT",  "localpass3"))},
+    "spol":  {"name":"Steve Pollock",   "hash": generate_password_hash(os.environ.get("PASS_SPOL",  "localpass4"))},
+    "jpow":  {"name":"Jarek Powaga",    "hash": generate_password_hash(os.environ.get("PASS_JPOW",  "localpass5"))},
+    "pdool": {"name":"Paul Doolan",     "hash": generate_password_hash(os.environ.get("PASS_PDOOL", "localpass6"))},
+    "cbird": {"name":"Craig Bird",      "hash": generate_password_hash(os.environ.get("PASS_CBIRD", "localpass7"))},
+    "nmcc":  {"name":"Neil McCay",      "hash": generate_password_hash(os.environ.get("PASS_NMCC",  "localpass8"))}
+}}
 
 # --- Database Helper Functions ---
 def get_db():
