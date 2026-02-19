@@ -6,16 +6,13 @@ from datetime import datetime
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 
 app = Flask(__name__)
-# SECRET_KEY is now read from environment variables
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'a-default-secret-key-for-local-dev')
-DATABASE = "rewards.db"
+DATABASE = "rewards_v2.db"
 
-# --- Login Manager Setup ---
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login' # Redirect to /login if user is not authenticated
+login_manager.login_view = 'login'
 
-# --- User Model for Flask-Login ---
 class User(UserMixin):
     def __init__(self, id, name, hash):
         self.id = id
@@ -31,20 +28,20 @@ def load_user(user_id):
         return User(id=mgr['username'], name=mgr['name'], hash=mgr['hash'])
     return None
 
-# --- Database Setup (Same as before) ---
-EMPLOYEES_LIST = sorted([
-    "Aaron O'Sullivan","Adam Mcguigan","Adrian Vladau","Amaan Satti","Anna Shaw", "Blake Erridge","Carl Atkins","Charlie Sneath","Claudiu Axinte","Cristina Constantinescu", "Dan Hitchcock","Daniel Waller","David Allcock","Dom Sparkes","Ed Simonaitis", "Emma Charles","Gaz Smith","Gavin Warrington","George Dooler","Graham Ross", "Glenn Walters","Ian Macpherson","Ioan Scurtu","Jake Mitchell","Jake Turner", "Jamie Chilcott","James Szerencses","Jarek Powaga","JERRY ATTIANAH","Jon Foggo", "Jon Mcfadyen","Jordan Bullen","Josh Prance","Justin Parsons","Kieran Carr", "Liam Murphy","Mari Belboda","Mark Mcdonald","Martin Wherrett","Matt Hollamby", "Matt Nolan","Matt Pike","Michael Quinn","Mike Watts","Nada Musa", "Neil Baker","Neil Ellis","Nicola Stennett-Bale","Phil Buckland","Rob Flinn", "Ryan Birkett","Sean Phipps","Shaun Kane","Shoeb Ahmed","Stephen Hopkins", "Umar Pervez","William Rutherford"
-])
+# --- ANONYMIZED DATA SETUP ---
+# Generate a list of 57 anonymized employees
+EMPLOYEES_LIST = [f"Employee {i:02d}" for i in range(1, 58)]
 
+# Anonymize manager usernames, names, and environment variable keys
 MANAGERS_LIST = {
-    "jkent": {"name":"James Kent",      "hash": generate_password_hash(os.environ.get("PASS_JKENT", "localpass1"))},
-    "aise":  {"name":"Andrei Isepciuc", "hash": generate_password_hash(os.environ.get("PASS_AISE",  "localpass2"))},
-    "wwit":  {"name":"Wayne Withers",   "hash": generate_password_hash(os.environ.get("PASS_WWIT",  "localpass3"))},
-    "spol":  {"name":"Steve Pollock",   "hash": generate_password_hash(os.environ.get("PASS_SPOL",  "localpass4"))},
-    "jpow":  {"name":"Jarek Powaga",    "hash": generate_password_hash(os.environ.get("PASS_JPOW",  "localpass5"))},
-    "pdool": {"name":"Paul Doolan",     "hash": generate_password_hash(os.environ.get("PASS_PDOOL", "localpass6"))},
-    "cbird": {"name":"Craig Bird",      "hash": generate_password_hash(os.environ.get("PASS_CBIRD", "localpass7"))},
-    "nmcc":  {"name":"Neil McCay",      "hash": generate_password_hash(os.environ.get("PASS_NMCC",  "localpass8"))}
+    "manager01": {"name":"Manager 01", "hash": generate_password_hash(os.environ.get("PASS_MANAGER01", "localpass1"))},
+    "manager02": {"name":"Manager 02", "hash": generate_password_hash(os.environ.get("PASS_MANAGER02", "localpass2"))},
+    "manager03": {"name":"Manager 03", "hash": generate_password_hash(os.environ.get("PASS_MANAGER03", "localpass3"))},
+    "manager04": {"name":"Manager 04", "hash": generate_password_hash(os.environ.get("PASS_MANAGER04", "localpass4"))},
+    "manager05": {"name":"Manager 05", "hash": generate_password_hash(os.environ.get("PASS_MANAGER05", "localpass5"))},
+    "manager06": {"name":"Manager 06", "hash": generate_password_hash(os.environ.get("PASS_MANAGER06", "localpass6"))},
+    "manager07": {"name":"Manager 07", "hash": generate_password_hash(os.environ.get("PASS_MANAGER07", "localpass7"))},
+    "manager08": {"name":"Manager 08", "hash": generate_password_hash(os.environ.get("PASS_MANAGER08", "localpass8"))}
 }
 
 def get_db():
@@ -72,7 +69,7 @@ def init_db():
         db.close()
         print("Database initialized successfully.")
 
-# --- Authentication Routes ---
+# --- Routes (No changes from here down) ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -80,7 +77,7 @@ def login():
         password = request.form.get('password')
         user = load_user(username)
         if user and check_password_hash(user.hash, password):
-            login_user(user) # Create a secure session
+            login_user(user)
             return redirect(url_for('home'))
         else:
             flash('Invalid username or password')
@@ -92,7 +89,6 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-# --- Protected Application Routes ---
 @app.route("/")
 @login_required
 def home():
@@ -145,7 +141,6 @@ def remove_points():
     data = request.json
     return modify_points(data.get("employee"), -int(data.get("amount", 0)), current_user.name, data.get("reason"), "Removed")
 
-# --- Main execution ---
 init_db()
 
 if __name__ == "__main__":
