@@ -28,11 +28,7 @@ def load_user(user_id):
         return User(id=mgr['username'], name=mgr['name'], hash=mgr['hash'])
     return None
 
-# --- ANONYMIZED DATA SETUP ---
-# Generate a list of 57 anonymized employees
 EMPLOYEES_LIST = [f"Employee {i:02d}" for i in range(1, 58)]
-
-# Anonymize manager usernames, names, and environment variable keys
 MANAGERS_LIST = {
     "manager01": {"name":"Manager 01", "hash": generate_password_hash(os.environ.get("PASS_MANAGER01", "localpass1"))},
     "manager02": {"name":"Manager 02", "hash": generate_password_hash(os.environ.get("PASS_MANAGER02", "localpass2"))},
@@ -69,7 +65,13 @@ def init_db():
         db.close()
         print("Database initialized successfully.")
 
-# --- Routes (No changes from here down) ---
+# --- NEW PUBLIC ROUTE ---
+@app.route('/view')
+def public_view():
+    """A public, read-only view for everyone."""
+    return render_template('public_view.html')
+
+# --- Authentication Routes ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -89,10 +91,20 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+# --- Protected Application Routes ---
 @app.route("/")
 @login_required
 def home():
     return render_template("index.html")
+
+# --- API Routes ---
+@app.route("/api/all_data")
+def get_all_data():
+    """A public API endpoint to get all employee points."""
+    db = get_db()
+    all_employees = db.execute("SELECT name, points FROM employees ORDER BY points DESC, name ASC").fetchall()
+    db.close()
+    return jsonify([dict(row) for row in all_employees])
 
 @app.route("/api/employees")
 @login_required
